@@ -1,106 +1,105 @@
-NovelAIの提案した学習手法、自動キャプションニング、タグ付け、Windows＋VRAM 12GB（SD v1.xの場合）環境等に対応したfine tuningです。ここでfine tuningとは、モデルを画像とキャプションで学習することを指します（LoRAやTextual Inversion、Hypernetworksは含みません）
+这是一种 fine tuning 方法，支持 NovelAI 提出的学习方法、自动描述、标签化以及 Windows + VRAM 12GB（适用于 SD v1.x）环境等。在此，fine tuning 指的是使用图像和描述来训练模型（不包括 LoRA、Textual Inversion 和 Hypernetworks）。
 
-[学習についての共通ドキュメント](./train_README-ja.md) もあわせてご覧ください。
+请参阅 [共同培训文档](./train_README-ja.md) 以获取有关培训的常见信息。
 
-# 概要
+# 概述
 
-Diffusersを用いてStable DiffusionのU-Netのfine tuningを行います。NovelAIの記事にある以下の改善に対応しています（Aspect Ratio BucketingについてはNovelAIのコードを参考にしましたが、最終的なコードはすべてオリジナルです）。
+使用 Diffusers 对 Stable Diffusion 的 U-Net 进行微调。它支持以下改进，这些改进在 NovelAI 的文章中被提出（关于纵横比存储桶，参考了 NovelAI 的代码，但最终代码均为原创）。
 
-* CLIP（Text Encoder）の最後の層ではなく最後から二番目の層の出力を用いる。
-* 正方形以外の解像度での学習（Aspect Ratio Bucketing） 。
-* トークン長を75から225に拡張する。
-* BLIPによるキャプショニング（キャプションの自動作成）、DeepDanbooruまたはWD14Taggerによる自動タグ付けを行う。
-* Hypernetworkの学習にも対応する。
-* Stable Diffusion v2.0（baseおよび768/v）に対応。
-* VAEの出力をあらかじめ取得しディスクに保存しておくことで、学習の省メモリ化、高速化を図る。
+* 使用 CLIP（文本编码器）倒数第二层的输出而不是最后一层的输出。
+* 在非方形分辨率下进行学习（纵横比存储桶）。
+* 将令牌长度从 75 扩展到 225。
+* 使用 BLIP 进行描述生成，使用 DeepDanbooru 或 WD14Tagger 进行自动标签化。
+* 支持 Hypernetwork 的训练。
+* 适用于 Stable Diffusion v2.0（基础和 768/v）。
+* 通过预先获取 VAE 的输出并将其保存到磁盘上，实现训练的省内存和快速化。
 
-デフォルトではText Encoderの学習は行いません。モデル全体のfine tuningではU-Netだけを学習するのが一般的なようです（NovelAIもそのようです）。オプション指定でText Encoderも学習対象とできます。
+默认情况下，不进行 Text Encoder 的训练。在整个模型的 fine tuning 中，只学习 U-Net 是常见的做法（NovelAI 也是如此）。可以使用选项指定 Text Encoder 作为训练目标。
 
-# 追加機能について
+# 关于额外功能
 
-## CLIPの出力の変更
+## 更改 CLIP 的输出
 
-プロンプトを画像に反映するため、テキストの特徴量への変換を行うのがCLIP（Text Encoder）です。Stable DiffusionではCLIPの最後の層の出力を用いていますが、それを最後から二番目の層の出力を用いるよう変更できます。NovelAIによると、これによりより正確にプロンプトが反映されるようになるとのことです。
-元のまま、最後の層の出力を用いることも可能です。
+为了将提示反映在图像中，需要将文本特征转换为图像，CLIP（文本编码器）用于此。在 Stable Diffusion 中，使用 CLIP 的最后一层的输出，但可以更改为使用倒数第二层的输出。据 NovelAI 表示，这可以更准确地反映提示。仍然可以使用原始的最后一层输出。
 
-※Stable Diffusion 2.0では最後から二番目の層をデフォルトで使います。clip_skipオプションを指定しないでください。
+※ 在 Stable Diffusion 2.0 中，默认使用倒数第二层。请不要指定 clip_skip 选项。
 
-## 正方形以外の解像度での学習
+## 在正方形以外的分辨率下进行训练
 
-Stable Diffusionは512\*512で学習されていますが、それに加えて256\*1024や384\*640といった解像度でも学習します。これによりトリミングされる部分が減り、より正しくプロンプトと画像の関係が学習されることが期待されます。
-学習解像度はパラメータとして与えられた解像度の面積（＝メモリ使用量）を超えない範囲で、64ピクセル単位で縦横に調整、作成されます。
+Stable Diffusion被训练在512*512的分辨率上，但也可以在256*1024或384*640等其他分辨率上进行训练。这将减少被裁剪的部分，期望能更准确地学习到提示和图像之间的关系。
+训练分辨率是根据给定的分辨率参数来创建的，不能超过该分辨率面积（即内存使用量）范围，以64像素为单位在水平和垂直方向上进行调整。
 
-機械学習では入力サイズをすべて統一するのが一般的ですが、特に制約があるわけではなく、実際は同一のバッチ内で統一されていれば大丈夫です。NovelAIの言うbucketingは、あらかじめ教師データを、アスペクト比に応じた学習解像度ごとに分類しておくことを指しているようです。そしてバッチを各bucket内の画像で作成することで、バッチの画像サイズを統一します。
+在机器学习中，通常将所有输入大小统一，但实际上只要在同一批次内统一即可，没有特殊限制。NovelAI所说的bucketing是指预先将训练数据根据宽高比分别分类到相应的学习分辨率中。然后通过使用各个bucket内的图像来创建批次，从而统一批次的图像大小。
 
-## トークン長の75から225への拡張
+## 将标记长度从75扩展到225
 
-Stable Diffusionでは最大75トークン（開始・終了を含むと77トークン）ですが、それを225トークンまで拡張します。
-ただしCLIPが受け付ける最大長は75トークンですので、225トークンの場合、単純に三分割してCLIPを呼び出してから結果を連結しています。
+Stable Diffusion最大支持75个标记（包括起始和结束标记为77个），但现在将其扩展到225个标记。
+但是，CLIP接受的最大长度为75个标记，因此在225个标记的情况下，将其简单地分成三个部分调用CLIP，然后将结果连接起来。
 
-※これが望ましい実装なのかどうかはいまひとつわかりません。とりあえず動いてはいるようです。特に2.0では何も参考になる実装がないので独自に実装してあります。
+※我不确定这是否是期望的实现方式。但它似乎能够运行。特别是在2.0中没有任何有用的实现，因此我已经独自实现了它。
 
-※Automatic1111氏のWeb UIではカンマを意識して分割、といったこともしているようですが、私の場合はそこまでしておらず単純な分割です。
+※Automatic1111先生的Web UI似乎会意识到逗号并进行分割，但我的实现比较简单，只是简单地分割。
 
-# 学習の手順
+# 训练过程
 
-あらかじめこのリポジトリのREADMEを参照し、環境整備を行ってください。
+请先参考本存储库的README，进行环境配置。
 
-## データの準備
+## 数据准备
 
-[学習データの準備について](./train_README-ja.md) を参照してください。fine tuningではメタデータを用いるfine tuning方式のみ対応しています。
+请参阅[有关准备训练数据的说明](./train_README-ja.md)。对于fine tuning，只支持使用元数据进行fine tuning方式。
 
-## 学習の実行
-たとえば以下のように実行します。以下は省メモリ化のための設定です。それぞれの行を必要に応じて書き換えてください。
+## 执行训练
+例如，可以按以下方式执行训练。以下是为省略内存的设置。请根据需要更改每行内容。
 
 ```
 accelerate launch --num_cpu_threads_per_process 1 fine_tune.py 
-    --pretrained_model_name_or_path=<.ckptまたは.safetensordまたはDiffusers版モデルのディレクトリ> 
-    --output_dir=<学習したモデルの出力先フォルダ>  
-    --output_name=<学習したモデル出力時のファイル名> 
-    --dataset_config=<データ準備で作成した.tomlファイル> 
+    --pretrained_model_name_or_path=<.ckpt或.safetensord或Diffusers版模型的目录> 
+    --output_dir=<训练后模型的输出目录> 
+    --output_name=<训练后模型的文件名，不包括扩展名> 
+    --dataset_config=<在数据准备过程中创建的.toml文件> 
     --save_model_as=safetensors 
     --learning_rate=5e-6 --max_train_steps=10000 
     --use_8bit_adam --xformers --gradient_checkpointing
     --mixed_precision=fp16
 ```
 
-`num_cpu_threads_per_process` には通常は1を指定するとよいようです。
+通常情况下，应该将`num_cpu_threads_per_process`设置为1。
 
-`pretrained_model_name_or_path` に追加学習を行う元となるモデルを指定します。Stable Diffusionのcheckpointファイル（.ckptまたは.safetensors）、Diffusersのローカルディスクにあるモデルディレクトリ、DiffusersのモデルID（"stabilityai/stable-diffusion-2"など）が指定できます。
+使用`pretrained_model_name_or_path`指定要进行追加训练的基础模型。可以指定Stable Diffusion的checkpoint文件（.ckpt或.safetensors）、Diffusers本地磁盘上的模型目录或Diffusers模型ID（如"stabilityai/stable-diffusion-2"）。
 
-`output_dir` に学習後のモデルを保存するフォルダを指定します。`output_name` にモデルのファイル名を拡張子を除いて指定します。`save_model_as` でsafetensors形式での保存を指定しています。
+使用`output_dir`指定保存训练后模型的文件夹，使用`output_name`指定模型文件的名称（不包括扩展名）。使用`save_model_as`指定以safetensors格式保存模型。
 
-`dataset_config` に `.toml` ファイルを指定します。ファイル内でのバッチサイズ指定は、当初はメモリ消費を抑えるために `1` としてください。
+使用`dataset_config`指定`.toml`文件。在文件中，批次大小设置为`1`，以抑制内存使用。
 
-学習させるステップ数 `max_train_steps` を10000とします。学習率 `learning_rate` はここでは5e-6を指定しています。
+将训练步骤数`max_train_steps`设置为10000。学习率`learning_rate`在此处设置为5e-6。
 
-省メモリ化のため `mixed_precision="fp16"` を指定します（RTX30 シリーズ以降では `bf16` も指定できます。環境整備時にaccelerateに行った設定と合わせてください）。また `gradient_checkpointing` を指定します。
+使用`mixed_precision="fp16"`减少内存占用（在RTX30系列及以上版本中，也可以使用`bf16`）。另外，指定`gradient_checkpointing`。
 
-オプティマイザ（モデルを学習データにあうように最適化＝学習させるクラス）にメモリ消費の少ない 8bit AdamW を使うため、 `optimizer_type="AdamW8bit"` を指定します。
+使用内存消耗较少的8位AdamW优化器（将模型优化以适合训练数据），使用`optimizer_type="AdamW8bit"`指定。
 
-`xformers` オプションを指定し、xformersのCrossAttentionを用います。xformersをインストールしていない場合やエラーとなる場合（環境にもよりますが `mixed_precision="no"` の場合など）、代わりに `mem_eff_attn` オプションを指定すると省メモリ版CrossAttentionを使用します（速度は遅くなります）。
+使用`xformers`选项，并使用xformers的CrossAttention。如果未安装xformers或出现错误（取决于环境，如`mixed_precision="no"`的情况），可以使用`mem_eff_attn`选项代替，使用省内存版CrossAttention（速度会变慢）。
 
-ある程度メモリがある場合は、`.toml` ファイルを編集してバッチサイズをたとえば `4` くらいに増やしてください（高速化と精度向上の可能性があります）。
+如果有足够的内存，请编辑`.toml`文件，将批次大小增加到例如`4`（可能会提高速度和精度）。
 
-### よく使われるオプションについて
+### 关于常用选项
 
-以下の場合にはオプションに関するドキュメントを参照してください。
+请参考以下情况的选项文档：
 
-- Stable Diffusion 2.xまたはそこからの派生モデルを学習する
-- clip skipを2以上を前提としたモデルを学習する
-- 75トークンを超えたキャプションで学習する
+- 学习Stable Diffusion 2.x或派生模型
+- 学习假设clip skip大于2的模型
+- 使用超过75个标记的标题进行训练
 
-### バッチサイズについて
+### 关于批量大小
 
-モデル全体を学習するためLoRA等の学習に比べるとメモリ消費量は多くなります（DreamBoothと同じ）。
+与学习LoRA等整个模型相比，内存消耗量会增加（与DreamBooth相同）。
 
-### 学習率について
+### 关于学习率
 
-1e-6から5e-6程度が一般的なようです。他のfine tuningの例なども参照してみてください。
+通常在1e-6到5e-6之间。请参考其他fine tuning的示例等。
 
-### 以前の形式のデータセット指定をした場合のコマンドライン
+### 当指定旧格式的数据集时的命令行
 
-解像度やバッチサイズをオプションで指定します。コマンドラインの例は以下の通りです。
+使用选项指定分辨率和批量大小。以下是命令行示例。
 
 ```
 accelerate launch --num_cpu_threads_per_process 1 fine_tune.py 
@@ -115,26 +114,28 @@ accelerate launch --num_cpu_threads_per_process 1 fine_tune.py
     --save_every_n_epochs=4
 ```
 
-<!-- 
-### 勾配をfp16とした学習（実験的機能）
-full_fp16オプションを指定すると勾配を通常のfloat32からfloat16（fp16）に変更して学習します（mixed precisionではなく完全なfp16学習になるようです）。これによりSD1.xの512*512サイズでは8GB未満、SD2.xの512*512サイズで12GB未満のVRAM使用量で学習できるようです。
+<!--
+### 使用fp16进行训练（实验性功能）
+当指定full_fp16选项时，将梯度从常规float32更改为float16（fp16）进行训练（似乎不是混合精度而是完全的fp16训练）。这样，在SD1.x的512 * 512大小下，似乎可以在少于8GB的VRAM使用量下进行训练，在SD2.x的512 * 512大小下，似乎可以在少于12GB的VRAM使用量下进行训练。
 
-あらかじめaccelerate configでfp16を指定し、オプションでmixed_precision="fp16"としてください（bf16では動作しません）。
+为了预先指定加速配置中的fp16，请使用选项mixed_precision =“fp16”（不适用于bf16）。
 
-メモリ使用量を最小化するためには、xformers、use_8bit_adam、gradient_checkpointingの各オプションを指定し、train_batch_sizeを1としてください。
-（余裕があるようならtrain_batch_sizeを段階的に増やすと若干精度が上がるはずです。）
+为了最小化内存使用量，请指定各选项xformers、use_8bit_adam、gradient_checkpointing，并将train_batch_size设置为1。
+（如果有余地，请逐步增加train_batch_size，这样可以稍微提高准确性。）
 
-PyTorchのソースにパッチを当てて無理やり実現しています（PyTorch 1.12.1と1.13.0で確認）。精度はかなり落ちますし、途中で学習失敗する確率も高くなります。学習率やステップ数の設定もシビアなようです。それらを認識したうえで自己責任でお使いください。
+我们在PyTorch源代码中应用了补丁，强行实现了这一点（在PyTorch 1.12.1和1.13.0中进行了确认）。精度会大大降低，并且学习过程中失败的概率也会变高。学习率和步数的设置似乎也很敏感。请在认识到这些情况后自行承担责任使用。
+
 -->
 
-# fine tuning特有のその他の主なオプション
+# fine tuning其他主要选项
 
-すべてのオプションについては別文書を参照してください。
+请参阅单独的文档以了解所有选项。
 
 ## `train_text_encoder`
-Text Encoderも学習対象とします。メモリ使用量が若干増加します。
+将Text Encoder作为训练对象。内存使用量会略微增加。
 
-通常のfine tuningではText Encoderは学習対象としませんが（恐らくText Encoderの出力に従うようにU-Netを学習するため）、学習データ数が少ない場合には、DreamBoothのようにText Encoder側に学習させるのも有効的なようです。
+通常的fine tuning不会将Text Encoder作为训练对象（可能是为了使U-Net遵循Text Encoder的输出），但如果训练数据量较少，则在Text Encoder侧进行训练也是有效的，例如像DreamBooth这样的情况。
 
 ## `diffusers_xformers`
-スクリプト独自のxformers置換機能ではなくDiffusersのxformers機能を利用します。Hypernetworkの学習はできなくなります。
+使用Diffusers的xformers功能而不是脚本独有的xformers替换功能。无法训练Hypernetwork。 
+
