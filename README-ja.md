@@ -1,51 +1,51 @@
-## リポジトリについて
-Stable Diffusionの学習、画像生成、その他のスクリプトを入れたリポジトリです。
+## 关于本repo
+这是一个包含了Stable Diffusion训练、图像生成和其他脚本的代码库。
 
-[README in English](./README.md) ←更新情報はこちらにあります
+[README in English](./README.md) ←最新更新在此处
 
-GUIやPowerShellスクリプトなど、より使いやすくする機能が[bmaltais氏のリポジトリ](https://github.com/bmaltais/kohya_ss)で提供されています（英語です）のであわせてご覧ください。bmaltais氏に感謝します。
+为了更加方便易用，bmaltais的代码库提供了GUI和PowerShell脚本等功能，请在[bmaltais的repo](https://github.com/bmaltais/kohya_ss)上查看（英文）。感谢bmaltais。
 
-以下のスクリプトがあります。
+以下是可用的脚本：
 
-* DreamBooth、U-NetおよびText Encoderの学習をサポート
+* 支持DreamBooth、U-Net和Text Encoder的训练
 * fine-tuning、同上
 * 画像生成
-* モデル変換（Stable Diffision ckpt/safetensorsとDiffusersの相互変換）
+* 模型转换（Stable Diffision ckpt/safetensors与Diffusers相互转换）
 
-## 使用法について
+## 关于使用方法
 
-当リポジトリ内およびnote.comに記事がありますのでそちらをご覧ください（将来的にはすべてこちらへ移すかもしれません）。
+在本代码库中和note.com中都有文章，请查看（将来可能全部移至此处）。
 
-* [学習について、共通編](./train_README-ja.md) : データ整備やオプションなど
-    * [データセット設定](./config_README-ja.md)
-* [DreamBoothの学習について](./train_db_README-ja.md)
-* [fine-tuningのガイド](./fine_tune_README_ja.md):
-* [LoRAの学習について](./train_network_README-ja.md)
-* [Textual Inversionの学習について](./train_ti_README-ja.md)
-* note.com [画像生成スクリプト](https://note.com/kohya_ss/n/n2693183a798e)
-* note.com [モデル変換スクリプト](https://note.com/kohya_ss/n/n374f316fe4ad)
+* [关于训练的共同部分](./train_README-ja.md) : 包括数据准备和选项等
+    * [数据集设置](./config_README-ja.md)
+* [DreamBooth训练指南](./train_db_README-ja.md)
+* [fine-tuning指南](./fine_tune_README_ja.md):
+* [LoRA训练指南](./train_network_README-ja.md)
+* [Textual Inversionの训练指南](./train_ti_README-ja.md)
+* note.com [图像生成脚本](https://note.com/kohya_ss/n/n2693183a798e)
+* note.com [模型转换脚本](https://note.com/kohya_ss/n/n374f316fe4ad)
 
-## Windowsでの動作に必要なプログラム
+## 在Windows上运行需要的程序
 
-Python 3.10.6およびGitが必要です。
+需要Python 3.10.6和Git。
 
 - Python 3.10.6: https://www.python.org/ftp/python/3.10.6/python-3.10.6-amd64.exe
 - git: https://git-scm.com/download/win
 
-PowerShellを使う場合、venvを使えるようにするためには以下の手順でセキュリティ設定を変更してください。
-（venvに限らずスクリプトの実行が可能になりますので注意してください。）
+如果使用PowerShell，请按照以下步骤更改安全设置以使用venv。
+（请注意，这不仅适用于venv，还适用于脚本的运行权限。）
 
-- PowerShellを管理者として開きます。
-- 「Set-ExecutionPolicy Unrestricted」と入力し、Yと答えます。
-- 管理者のPowerShellを閉じます。
+- 以管理员身份打开PowerShell。
+- 输入"Set-ExecutionPolicy Unrestricted"，并回答Y。
+- 关闭管理员PowerShell。
 
-## Windows環境でのインストール
+## Windows环境下的安装
 
-以下の例ではPyTorchは1.12.1／CUDA 11.6版をインストールします。CUDA 11.3版やPyTorch 1.13を使う場合は適宜書き換えください。
+以下示例安装PyTorch 1.12.1/CUDA 11.6版。如果使用CUDA 11.3版或PyTorch 1.13，请相应地更改。
 
-（なお、python -m venv～の行で「python」とだけ表示された場合、py -m venv～のようにpythonをpyに変更してください。）
+（如果“python”只显示在python -m venv〜行中，请将python更改为py。）
 
-通常の（管理者ではない）PowerShellを開き以下を順に実行します。
+在常规（非管理员）PowerShell中，按以下顺序执行：
 
 ```powershell
 git clone https://github.com/kohya-ss/sd-scripts.git
@@ -71,7 +71,7 @@ pip install --use-pep517 --upgrade -r requirements.txt
 pip install -U -I --no-deps xformers==0.0.16
 -->
 
-コマンドプロンプトでは以下になります。
+使用命令提示符时则如下。
 
 
 ```bat
@@ -92,11 +92,11 @@ copy /y .\bitsandbytes_windows\main.py .\venv\Lib\site-packages\bitsandbytes\cud
 accelerate config
 ```
 
-（注:``python -m venv venv`` のほうが ``python -m venv --system-site-packages venv`` より安全そうなため書き換えました。globalなpythonにパッケージがインストールしてあると、後者だといろいろと問題が起きます。）
+（注意：因为使用 ``python -m venv --system-site-packages venv`` 可能会引起全局 Python 环境的问题，所以我将其改写为 ``python -m venv venv``，这样更加安全。）
 
-accelerate configの質問には以下のように答えてください。（bf16で学習する場合、最後の質問にはbf16と答えてください。）
+请回答以下有关 accelerate config 的问题。（如果使用 bf16 进行训练，请在最后一个问题中回答 bf16。）
 
-※0.15.0から日本語環境では選択のためにカーソルキーを押すと落ちます（……）。数字キーの0、1、2……で選択できますので、そちらを使ってください。
+※从0.15.0开始，当在日语环境下按光标键进行选择时，程序会崩溃。请使用数字键 0、1、2 等进行选择。
 
 ```txt
 - This machine
@@ -108,16 +108,15 @@ accelerate configの質問には以下のように答えてください。（bf1
 - fp16
 ```
 
-※場合によって ``ValueError: fp16 mixed precision requires a GPU`` というエラーが出ることがあるようです。この場合、6番目の質問（
-``What GPU(s) (by id) should be used for training on this machine as a comma-separated list? [all]:``）に「0」と答えてください。（id `0`のGPUが使われます。）
+※ 根据情况，可能会出现 "ValueError：fp16混合精度需要GPU" 错误。 在这种情况下，请在第6个问题中回答：“在这台机器上应该使用哪个GPU（按id）作为逗号分隔的列表进行训练？[all]：”，并回答“0”。 （将使用id `0`的GPU。）
 
-### PyTorchとxformersのバージョンについて
+### 关于PyTorch和xformers的版本
 
-他のバージョンでは学習がうまくいかない場合があるようです。特に他の理由がなければ指定のバージョンをお使いください。
+在其他版本中，可能会出现训练不成功的情况。如果没有特殊原因，请使用指定的版本。
 
-## アップグレード
+## 升级
 
-新しいリリースがあった場合、以下のコマンドで更新できます。
+如果有新的版本发布，可以使用以下命令进行更新。
 
 ```powershell
 cd sd-scripts
@@ -126,17 +125,17 @@ git pull
 pip install --use-pep517 --upgrade -r requirements.txt
 ```
 
-コマンドが成功すれば新しいバージョンが使用できます。
+如果命令成功执行，您将可以使用新版本。
 
-## 謝意
+## 致谢
 
-LoRAの実装は[cloneofsimo氏のリポジトリ](https://github.com/cloneofsimo/lora)を基にしたものです。感謝申し上げます。
+LoRA的实现基于[cloneofsimo的存储库](https://github.com/cloneofsimo/lora)。我们表示感谢。
 
-Conv2d 3x3への拡大は [cloneofsimo氏](https://github.com/cloneofsimo/lora) が最初にリリースし、KohakuBlueleaf氏が [LoCon](https://github.com/KohakuBlueleaf/LoCon) でその有効性を明らかにしたものです。KohakuBlueleaf氏に深く感謝します。
+Conv2d 3x3的扩展是由[cloneofsimo](https://github.com/cloneofsimo/lora)最初发布的，KohakuBlueleaf在[LoCon](https://github.com/KohakuBlueleaf/LoCon)中证明了其有效性。我们深深地感谢KohakuBlueleaf。
 
-## ライセンス
+## 许可证
 
-スクリプトのライセンスはASL 2.0ですが（Diffusersおよびcloneofsimo氏のリポジトリ由来のものも同様）、一部他のライセンスのコードを含みます。
+脚本的许可证为ASL 2.0，但包含部分其他许可证的代码（包括Diffusers和cloneofsimo存储库的代码）。
 
 [Memory Efficient Attention Pytorch](https://github.com/lucidrains/memory-efficient-attention-pytorch): MIT
 
