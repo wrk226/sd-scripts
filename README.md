@@ -1,9 +1,9 @@
 This repository contains training, generation and utility scripts for Stable Diffusion.
 
 [__Change History__](#change-history) is moved to the bottom of the page.
-更新履歴は[ページ末尾](#change-history)に移しました。
+更新历史已移至[页面底部](#change-history)。
 
-[日本語版README](./README-ja.md)
+[中文版README](./README-ch.md)
 
 For easier use (GUI and PowerShell scripts etc...), please visit [the repository maintained by bmaltais](https://github.com/bmaltais/kohya_ss). Thanks to @bmaltais!
 
@@ -142,19 +142,19 @@ The majority of scripts is licensed under ASL 2.0 (including codes from Diffuser
   - Fix sample generation is crashing in Textual Inversion training when using templates, or if height/width is not divisible by 8.
   - Update documents (Japanese only).
 
-  - 大きく変更したため不具合があるかもしれません。問題が起きた時にスクリプトを前のバージョンに戻せない場合は、しばらく更新を控えてください。
-  - 最低限のメタデータ（module name, dim, alpha および network_args）が `--no_metadata` オプション指定時にも記録されます。issue https://github.com/kohya-ss/sd-scripts/issues/254
-  - `train_network.py` で LoRAの Conv2d-3x3 拡張に対応しました（カーネルサイズ1x1以外のConv2dにも対象範囲を拡大します）。
-    - 現在のバージョンの [LoCon](https://github.com/KohakuBlueleaf/LoCon) と同一の仕様です。__KohakuBlueleaf氏のご支援に深く感謝します。__
-      - LoCon が将来的に拡張された場合、それらのバージョンでの互換性は保証できません。
-    - `--network_args` オプションを `--network_args "conv_dim=4" "conv_alpha=1"` のように指定してください。
-    - Stable Diffusion web UI での使用には [Additional Networks extension](https://github.com/kohya-ss/sd-webui-additional-networks) のversion 0.5.0 以降が必要です。
-    - __Stable Diffusion web UI の LoRA 機能は LoRAの Conv2d-3x3 拡張に対応していないようです。使用するか否か慎重にご検討ください。__
-  - マージ、抽出のスクリプトについても LoRA の Conv2d-3x3 拡張に対応しました.
-  - サンプル画像生成後にCUDAメモリを解放しVRAM使用量を削減しました。 issue https://github.com/kohya-ss/sd-scripts/issues/260 
-  - 空のキャプションが使えるようになりました。 issue https://github.com/kohya-ss/sd-scripts/issues/258
-  - Textual Inversion 学習でテンプレートを使ったとき、height/width が 8 で割り切れなかったときにサンプル画像生成がクラッシュするのを修正しました。
-  - ドキュメント類を更新しました。
+- 由于进行了大规模更改，可能存在缺陷。如果在执行脚本后无法将其回滚到之前的版本，请暂时避免更新。
+- 即使使用 `--no_metadata` 选项，也将记录最少的元数据（模块名称、dim、alpha 和 network_args） issue https://github.com/kohya-ss/sd-scripts/issues/254
+- `train_network.py` 现在支持 LoRA 的 Conv2d-3x3 扩展（也将范围扩展到 Conv2d 的大小不是 1x1 的情况）。
+    - 这与当前版本的[LoCon](https://github.com/KohakuBlueleaf/LoCon)的规格相同。__我们深深地感谢 KohakuBlueleaf 的支持。__
+      - 如果 LoCon 将来被扩展，无法保证与这些版本的兼容性。
+    - 请使用 `--network_args` 选项指定类似 `--network_args "conv_dim=4" "conv_alpha=1"` 的参数。
+    - Stable Diffusion web UI 使用时需要 [Additional Networks 扩展](https://github.com/kohya-ss/sd-webui-additional-networks)的 version 0.5.0 或更高版本。
+    - __稳定的 Diffusion web UI 中的 LoRA 功能似乎不支持 LoRA 的 Conv2d-3x3 扩展。请谨慎考虑是否使用。__
+  - 合并和提取脚本也支持 LoRA 的 Conv2d-3x3 扩展。
+  - 生成样本图像后释放CUDA内存以减少VRAM使用量。 issue https://github.com/kohya-ss/sd-scripts/issues/260 
+  - 现在可以使用空标题。 issue https://github.com/kohya-ss/sd-scripts/issues/258
+  - 修正了使用 Textual Inversion 学习并使用模板时，当高度/宽度不能被8整除时生成样本图像会崩溃的问题。
+  - 更新了文档。
 
   - Sample image generation:
     A prompt file might look like this, for example
@@ -178,8 +178,8 @@ The majority of scripts is licensed under ASL 2.0 (including codes from Diffuser
 
     The prompt weighting such as `( )` and `[ ]` are not working.
 
-  - サンプル画像生成：
-    プロンプトファイルは例えば以下のようになります。
+  - 生成示例图像：
+    提示文件示例如下：
 
     ```
     # prompt 1
@@ -189,7 +189,7 @@ The majority of scripts is licensed under ASL 2.0 (including codes from Diffuser
     masterpiece, best quality, 1boy, in business suit, standing at street, looking back --n low quality, worst quality, bad anatomy,bad composition, poor, low effort --w 576 --h 832 --d 2 --l 5.5 --s 40
     ```
 
-    `#` で始まる行はコメントになります。`--n` のように「ハイフン二個＋英小文字」の形でオプションを指定できます。以下が使用可能できます。
+    以 `#` 开头的行是注释。您可以使用“破折号两个+小写英文字母”的形式来指定选项，例如 `--n`。以下选项可用：
 
     * `--n` Negative prompt up to the next option.
     * `--w` Specifies the width of the generated image.
@@ -198,7 +198,7 @@ The majority of scripts is licensed under ASL 2.0 (including codes from Diffuser
     * `--l` Specifies the CFG scale of the generated image.
     * `--s` Specifies the number of steps in the generation.
 
-    `( )` や `[ ]` などの重みづけは動作しません。
+    加权（如 `( )` 或 `[ ]`）不起作用。
 
 Please read [Releases](https://github.com/kohya-ss/sd-scripts/releases) for recent updates.
-最近の更新情報は [Release](https://github.com/kohya-ss/sd-scripts/releases) をご覧ください。
+请查看[Releases](https://github.com/kohya-ss/sd-scripts/releases)获取最新更新信息。
