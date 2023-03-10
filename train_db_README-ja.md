@@ -1,44 +1,44 @@
-DreamBoothのガイドです。
+这是DreamBooth的指南。
 
-[学習についての共通ドキュメント](./train_README-ja.md) もあわせてご覧ください。
+请同时查看[有关学习的共同文档](./train_README-ja.md)。
 
 # 概要
 
-DreamBoothとは、画像生成モデルに特定の主題を追加学習し、それを特定の識別子で生成する技術です。[論文はこちら](https://arxiv.org/abs/2208.12242)。
+DreamBooth是一种技术，可以将特定主题添加到图像生成模型中进行额外学习，并使用特定的标识符在生成图像中呈现出来。[论文在此](https://arxiv.org/abs/2208.12242)。
 
-具体的には、Stable Diffusionのモデルにキャラや画風などを学ばせ、それを `shs` のような特定の単語で呼び出せる（生成画像に出現させる）ことができます。
+具体来说，可以使用Stable Diffusion模型来学习角色和绘画风格等内容，并使用类似于“shs”这样的特定单词来调用（呈现在生成的图像中）。
 
-スクリプトは[DiffusersのDreamBooth](https://github.com/huggingface/diffusers/tree/main/examples/dreambooth)を元にしていますが、以下のような機能追加を行っています（いくつかの機能は元のスクリプト側もその後対応しています）。
+脚本基于[Diffusers的DreamBooth](https://github.com/huggingface/diffusers/tree/main/examples/dreambooth)，但增加了以下功能（某些功能在原始脚本中也得到了支持）。
 
-スクリプトの主な機能は以下の通りです。
+脚本的主要功能如下：
 
-- 8bit Adam optimizerおよびlatentのキャッシュによる省メモリ化（[Shivam Shrirao氏版](https://github.com/ShivamShrirao/diffusers/tree/main/examples/dreambooth)と同様）。
-- xformersによる省メモリ化。
-- 512x512だけではなく任意サイズでの学習。
-- augmentationによる品質の向上。
-- DreamBoothだけではなくText Encoder+U-Netのfine tuningに対応。
-- Stable Diffusion形式でのモデルの読み書き。
-- Aspect Ratio Bucketing。
-- Stable Diffusion v2.0対応。
+- 通过8位Adam优化器和latents缓存实现内存省略（与[Shivam Shrirao版](https://github.com/ShivamShrirao/diffusers/tree/main/examples/dreambooth)相同）。
+- 通过xformers实现内存省略。
+- 不仅在512x512上进行学习，而且可以在任意尺寸上进行学习。
+- 通过数据扩充提高质量。
+- 支持DreamBooth以外的Text Encoder+U-Net微调。
+- Stable Diffusion格式的模型读写。
+- 纵横比bucketing。
+- Stable Diffusion v2.0兼容。
 
-# 学習の手順
+# 学习流程
 
-あらかじめこのリポジトリのREADMEを参照し、環境整備を行ってください。
+请参考此存储库的README，并准备好环境。
 
-## データの準備
+## 准备数据
 
-[学習データの準備について](./train_README-ja.md) を参照してください。
+请参阅[有关准备训练数据的文档](./train_README-ja.md)。
 
-## 学習の実行
+## 进行训练
 
-スクリプトを実行します。最大限、メモリを節約したコマンドは以下のようになります（実際には1行で入力します）。それぞれの行を必要に応じて書き換えてください。12GB程度のVRAMで動作するようです。
+执行脚本。以下是最大限度地节省内存的命令（实际上在一行中输入）。根据需要更改每行。它似乎可以在约12GB的VRAM上运行。
 
 ```
 accelerate launch --num_cpu_threads_per_process 1 train_db.py 
-    --pretrained_model_name_or_path=<.ckptまたは.safetensordまたはDiffusers版モデルのディレクトリ> 
-    --dataset_config=<データ準備で作成した.tomlファイル> 
-    --output_dir=<学習したモデルの出力先フォルダ>  
-    --output_name=<学習したモデル出力時のファイル名> 
+    --pretrained_model_name_or_path=<.ckpt or .safetensord or Diffusers版模型的目录>
+    --dataset_config=<准备数据创建的.toml文件>
+    --output_dir=<训练模型的输出文件夹>
+    --output_name=<训练模型输出时的文件名>
     --save_model_as=safetensors 
     --prior_loss_weight=1.0 
     --max_train_steps=1600 
@@ -50,63 +50,63 @@ accelerate launch --num_cpu_threads_per_process 1 train_db.py
     --gradient_checkpointing
 ```
 
-`num_cpu_threads_per_process` には通常は1を指定するとよいようです。
+`num_cpu_threads_per_process`通常应指定为1。
 
-`pretrained_model_name_or_path` に追加学習を行う元となるモデルを指定します。Stable Diffusionのcheckpointファイル（.ckptまたは.safetensors）、Diffusersのローカルディスクにあるモデルディレクトリ、DiffusersのモデルID（"stabilityai/stable-diffusion-2"など）が指定できます。
+`pretrained_model_name_or_path`指定要进行额外学习的原始模型。可以指定Stable Diffusion的checkpoint文件（.ckpt或.safetensors）、Diffusers本地磁盘上的模型目录、Diffusers模型ID（例如“stabilityai/stable-diffusion-2”）。
 
-`output_dir` に学習後のモデルを保存するフォルダを指定します。`output_name` にモデルのファイル名を拡張子を除いて指定します。`save_model_as` でsafetensors形式での保存を指定しています。
+`output_dir`指定保存训练后模型的文件夹。使用`output_name`指定模型文件的名称，不包括扩展名。通过`save_model_as`指定保存为safetensors格式。
 
-`dataset_config` に `.toml` ファイルを指定します。ファイル内でのバッチサイズ指定は、当初はメモリ消費を抑えるために `1` としてください。
+指定 `dataset_config` 文件为 `.toml` 文件。在文件中，将 batch_size 设置为 `1`，以减少内存消耗。
 
-`prior_loss_weight` は正則化画像のlossの重みです。通常は1.0を指定します。
+`prior_loss_weight` 是正则化图像的损失权重。通常将其设置为 1.0。
 
-学習させるステップ数 `max_train_steps` を1600とします。学習率 `learning_rate` はここでは1e-6を指定しています。
+将训练步数 `max_train_steps` 设置为 1600。学习率 `learning_rate` 在这里设置为 1e-6。
 
-省メモリ化のため `mixed_precision="fp16"` を指定します（RTX30 シリーズ以降では `bf16` も指定できます。環境整備時にaccelerateに行った設定と合わせてください）。また `gradient_checkpointing` を指定します。
+为了节省内存，指定 `mixed_precision="fp16"`（在 RTX30 系列及以上版本中，还可以指定为 `bf16`。请与加速设置相匹配）。同时，指定 `gradient_checkpointing`。
 
-オプティマイザ（モデルを学習データにあうように最適化＝学習させるクラス）にメモリ消費の少ない 8bit AdamW を使うため、 `optimizer_type="AdamW8bit"` を指定します。
+为了使用内存占用更少的 8 位 AdamW 优化器（将模型优化为适合于训练数据的类），指定 `optimizer_type="AdamW8bit"`。
 
-`xformers` オプションを指定し、xformersのCrossAttentionを用います。xformersをインストールしていない場合やエラーとなる場合（環境にもよりますが `mixed_precision="no"` の場合など）、代わりに `mem_eff_attn` オプションを指定すると省メモリ版CrossAttentionを使用します（速度は遅くなります）。
+指定 `xformers` 选项并使用 xformers 的 CrossAttention。如果未安装 xformers 或出现错误（取决于环境，例如 `mixed_precision="no"` 的情况），则可以指定 `mem_eff_attn` 选项，以使用省内存版的 CrossAttention（速度会变慢）。
 
-省メモリ化のため `cache_latents` オプションを指定してVAEの出力をキャッシュします。
+为了节省内存，指定 `cache_latents` 选项，以缓存 VAE 的输出。
 
-ある程度メモリがある場合は、`.toml` ファイルを編集してバッチサイズをたとえば `4` くらいに増やしてください（高速化と精度向上の可能性があります）。また `cache_latents` を外すことで augmentation が可能になります。
+如果有足够的内存，请编辑 `.toml` 文件，将 batch_size 增加到大约 `4` 左右（可能会加快速度并提高精度）。另外，取消 `cache_latents` 选项可以进行数据增强。
 
-### よく使われるオプションについて
+### 关于常用选项
 
-以下の場合には [学習の共通ドキュメント](./train_README-ja.md) の「よく使われるオプション」を参照してください。
+请参阅 [train_README-ja.md](./train_README-ja.md) 中的 "常用选项"，以学习如何在以下情况下使用：
 
-- Stable Diffusion 2.xまたはそこからの派生モデルを学習する
-- clip skipを2以上を前提としたモデルを学習する
-- 75トークンを超えたキャプションで学習する
+- 学习 Stable Diffusion 2.x 或其派生模型
+- 学习需要 clip skip 大于等于 2 的模型
+- 使用超过 75 个令牌的字幕进行训练
 
-### DreamBoothでのステップ数について
+### 关于 DreamBooth 的步数
 
-当スクリプトでは省メモリ化のため、ステップ当たりの学習回数が元のスクリプトの半分になっています（対象の画像と正則化画像を同一のバッチではなく別のバッチに分割して学習するため）。
+为了节省内存，每个步骤的训练次数减半（将目标图像和正则化图像分别分成不同的批次进行训练）。
 
-元のDiffusers版やXavierXiao氏のStable Diffusion版とほぼ同じ学習を行うには、ステップ数を倍にしてください。
+如果要进行与原始 Diffusers 版本或 XavierXiao 先生的 Stable Diffusion 版本几乎相同的训练，请将步数加倍。
 
-（学習画像と正則化画像をまとめてから shuffle するため厳密にはデータの順番が変わってしまいますが、学習には大きな影響はないと思います。）
+（由于将训练图像和正则化图像分组后进行 shuffle，因此严格来说，数据的顺序会发生变化，但我认为这对训练没有太大影响。）
 
-### DreamBoothでのバッチサイズについて
+### 关于 DreamBooth 的批次大小
 
-モデル全体を学習するためLoRA等の学習に比べるとメモリ消費量は多くなります（fine tuningと同じ）。
+与像 LoRA 这样的训练相比，为了学习整个模型，内存消耗量会更大（与 fine tuning 相同）。
 
-### 学習率について
+### 关于学习率
 
-Diffusers版では5e-6ですがStable Diffusion版は1e-6ですので、上のサンプルでは1e-6を指定しています。
+在 Diffusers 版本中，学习率为 5e-6，而 Stable Diffusion 版本中学习率为 1e-6，因此在上面的示例中，将学习率指定为 1e-6。
 
-### 以前の形式のデータセット指定をした場合のコマンドライン
+### 如果指定了旧格式的数据集配置
 
-解像度やバッチサイズをオプションで指定します。コマンドラインの例は以下の通りです。
+使用选项指定分辨率和批次大小。以下是命令行示例。
 
 ```
 accelerate launch --num_cpu_threads_per_process 1 train_db.py 
-    --pretrained_model_name_or_path=<.ckptまたは.safetensordまたはDiffusers版モデルのディレクトリ> 
-    --train_data_dir=<学習用データのディレクトリ> 
-    --reg_data_dir=<正則化画像のディレクトリ> 
-    --output_dir=<学習したモデルの出力先ディレクトリ> 
-    --output_name=<学習したモデル出力時のファイル名> 
+    --pretrained_model_name_or_path=<.ckpt 文件、.safetensor 文件或 Diffusers 版本模型的目录> 
+    --train_data_dir=<训练数据目录> 
+    --reg_data_dir=<正则化图像目录> 
+    --output_dir=<训练模型输出目录> 
+    --output_name=<训练模型输出文件名> 
     --prior_loss_weight=1.0 
     --resolution=512 
     --train_batch_size=1 
@@ -119,41 +119,42 @@ accelerate launch --num_cpu_threads_per_process 1 train_db.py
     --gradient_checkpointing
 ```
 
-## 学習したモデルで画像生成する
+## 使用训练模型生成图像
 
-学習が終わると指定したフォルダに指定した名前でsafetensorsファイルが出力されます。
+训练完成后，safetensors 文件将按指定的名称输出到指定的文件夹中。
 
-v1.4/1.5およびその他の派生モデルの場合、このモデルでAutomatic1111氏のWebUIなどで推論できます。models\Stable-diffusionフォルダに置いてください。
+对于 v1.4/1.5 和其他派生模型，您可以在此模型中使用 Automatic1111 先生的 WebUI 进行推理。请将其放置在 models\Stable-diffusion 文件夹中。
 
-v2.xモデルでWebUIで画像生成する場合、モデルの仕様が記述された.yamlファイルが別途必要になります。v2.x baseの場合はv2-inference.yamlを、768/vの場合はv2-inference-v.yamlを、同じフォルダに置き、拡張子の前の部分をモデルと同じ名前にしてください。
+对于 v2.x 模型，在 WebUI 中生成图像时，需要单独的 .yaml 文件来描述模型规格。对于 v2.x base，请使用 v2-inference.yaml，对于 768/v，请使用 v2-inference-v.yaml，并将其放置在相同的文件夹中，并将扩展名前面的部分命名为与模型相同的名称。
 
 ![image](https://user-images.githubusercontent.com/52813779/210776915-061d79c3-6582-42c2-8884-8b91d2f07313.png)
 
-各yamlファイルは[Stability AIのSD2.0のリポジトリ](https://github.com/Stability-AI/stablediffusion/tree/main/configs/stable-diffusion)にあります。
+每个 .yaml 文件都可以在 [Stability AI 的 SD2.0 存储库](https://github.com/Stability-AI/stablediffusion/tree/main/configs/stable-diffusion) 中找到。
 
-# DreamBooth特有のその他の主なオプション
+# DreamBooth 的其他主要选项
 
-すべてのオプションについては別文書を参照してください。
+有关所有选项的详细信息，请参见其他文档。
 
-## Text Encoderの学習を途中から行わない --stop_text_encoder_training
+## 从中间停止学习文本编码器 --stop_text_encoder_training
 
-stop_text_encoder_trainingオプションに数値を指定すると、そのステップ数以降はText Encoderの学習を行わずU-Netだけ学習します。場合によっては精度の向上が期待できるかもしれません。
+将 stop_text_encoder_training 选项指定为数字，可以在该步骤后停止学习文本编码器，并仅学习 U-Net。在某些情况下，可能会期望提高精度。
 
-（恐らくText Encoderだけ先に過学習することがあり、それを防げるのではないかと推測していますが、詳細な影響は不明です。）
+（我猜测文本编码器可能会先过拟合，因此可以防止它发生，但详细影响尚不清楚。）
 
-## Tokenizerのパディングをしない --no_token_padding
-no_token_paddingオプションを指定するとTokenizerの出力をpaddingしません（Diffusers版の旧DreamBoothと同じ動きになります）。
+## 不进行 Tokenizer 的填充 --no_token_padding
+
+如果指定 no_token_padding 选项，则不会对 Tokenizer 的输出进行填充（与旧版 Diffusers 的 DreamBooth 相同）。
 
 
 <!-- 
-bucketing（後述）を利用しかつaugmentation（後述）を使う場合の例は以下のようになります。
+如果使用 bucketing（如下所述）并使用数据增强，命令行示例如下。
 
 ```
 accelerate launch --num_cpu_threads_per_process 8 train_db.py 
-    --pretrained_model_name_or_path=<.ckptまたは.safetensordまたはDiffusers版モデルのディレクトリ> 
-    --train_data_dir=<学習用データのディレクトリ> 
-    --reg_data_dir=<正則化画像のディレクトリ> 
-    --output_dir=<学習したモデルの出力先ディレクトリ> 
+    --pretrained_model_name_or_path=<.ckpt 文件、.safetensor 文件或 Diffusers 版本模型的目录>
+    --train_data_dir=<训练数据目录>
+    --reg_data_dir=<正则化图像目录>
+    --output_dir=<训练模型输出目录>
     --resolution=768,512 
     --train_batch_size=20 --learning_rate=5e-6 --max_train_steps=800 
     --use_8bit_adam --xformers --mixed_precision="bf16" 
