@@ -3,7 +3,7 @@ This repository contains training, generation and utility scripts for Stable Dif
 [__Change History__](#change-history) is moved to the bottom of the page.
 更新历史已移至[页面底部](#change-history)。
 
-[中文版README](./README-ch.md)
+[中文版README](./README-ja.md)
 
 For easier use (GUI and PowerShell scripts etc...), please visit [the repository maintained by bmaltais](https://github.com/bmaltais/kohya_ss). Thanks to @bmaltais!
 
